@@ -1,13 +1,20 @@
-// Cicero44bc 15:24 08 Nov 2014 - www.breakfastlabs.com
+// cicero44bc 23:10 08 Nov 2014 - www.breakfastlabs.com
 //
-// This sketch allows a safe reset of the Arduino using code and one wire from a digital pin to the reset pin.
-// I found when using a continuous servo I was getting very slight drift. I discovered that if the servo is not
-// attached in code, therefore not receiving any instructions it would not drift or flutter at all.
+// This sketch safely resets an Arduino using code and only one wire. It does not use watchdog.
+// 
+// Purpose: I found when using a continuous servo I was getting very slight drift, even after finding 'centre'. 
+// I confirmed if the servo is not attached in code, it would not drift or flutter at all. Detach was not working, 
+// this became a quick fix and a chance to try something new for me with using built in persistent storage to 
+// allow the Arduino to determine if it is booting after a reset, i.e. not cold booting.
 //
-// This sketch checks if this is the first boot, runs and action if so (openClose() in this case - to accommodate
-// a requirement for my aquarium), sets a value in EEPROM (so it is persistent after reset) resets the Arduino,
-// checks EEPROM if its first boot, does nothing (in this case) when this is confirmed as the 'second boot' and
-// resets the value in EEPROM for next time.
+// Method: During setup() the sketch checks if this is the first boot by checking the value of a byte in persistant 
+// storage, i.e. EEPROM (reference in code comments), if so it runs an action (openClose() in this case - to
+// accommodate a requirement for my aquarium). A value is then set in EEPROM (so it is persistent after reset and
+// a 'reboot' can be therefore be determined), then the Arduino is reset. On second boot the EEPROM is then checked
+// in this case the Arduino then does nothing, and the 'warm boot flag' byte is reset in EEPROM.
+//
+// The EEPROM is purposely only checked once and a corresponding boolean in RAM checked thereafter because EEPROM
+// has limited R/W's.
 //
 // Notes
 //
@@ -20,7 +27,8 @@
 //
 // Reset method - http://weblog.jos.ph/development/arduino-reset-hack/
 //
-// Shout out - Thanks to ALL at ultimateReef.net for your help.
+// Thanks to ALL at ultimateReef.net for your help on the aquarium front, esp. promazin, McQueen25,
+// stevesplace78 and foo who have helped me in the past.
 
 #include <Servo.h>
 #include <EEPROM.h>
@@ -35,7 +43,7 @@ void setup()
 {
   digitalWrite(resetPin, HIGH); // Pin must be set to HIGH immediately on boot.
   pinMode(resetPin,OUTPUT);     // Declare it as an output AFTER it's HIGH
-  if (checkSecondBoot()) {  // Check EEPROM to confirm if this is this is the first boot - Checking a Variable first is better due to save the EEPROM (Limited R/W's).
+  if (checkSecondBoot()) {  // Check EEPROM to confirm if this is this is the first boot.
     secondBoot = true;
     resetEEPROM();
   }
